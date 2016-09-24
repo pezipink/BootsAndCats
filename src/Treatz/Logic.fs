@@ -3,7 +3,9 @@ open SDLUtility
 open System
 /////
 let noMoreParachuting = 450.0
-
+let miaow =  
+    let p  = new System.Media.SoundPlayer(@"..\..\..\..\images\cat_meow_x.wav")
+    fun () -> p.Play()
 /////
 let chaos = System.Random(DateTime.Now.Millisecond)
 
@@ -86,6 +88,7 @@ type Player =
         mutable parachuteTime : int
         mutable buttonsPressed : Set<Button>
         mutable justJumped : bool
+        mutable score : int
     }
      with static member Create() =
             { state = PlayerState.InBus
@@ -97,6 +100,7 @@ type Player =
               parachuteTime = 0
               buttonsPressed = Set.empty  
               justJumped = false
+              score = 0
               }
            member this.busrect: SDLGeometry.Rectangle =
             let l,s = this.catbus 
@@ -166,6 +170,7 @@ let update (state:Game) =
             // jump from bus
             if isFire then
                 p.state <- FreeFalling
+                miaow()
                 // tood: need to centre this
                 p.pos.x <- (fst p.catbus).x 
                 p.pos.y <- (fst p.catbus).y
@@ -226,6 +231,7 @@ let update (state:Game) =
             player.state <- Splatted
         | Parachute when player.pos.y > groundLevel - bootSize.height && overlapBoot ->
             // landed in boot! (basic, this needs to take into account the boot height
+            miaow()
             player.state <- InBoot
         | _ -> ()
 
@@ -235,7 +241,19 @@ let update (state:Game) =
     match state.Player1.state, state.Player2.state with
     | (InBoot | Splatted), (InBoot | Splatted) -> 
         state.State <- GameOver
-        StartGame() 
+        let n = StartGame() 
+        let p1s =  ((state.Player1.parachuteTime / 2) + state.Player1.freeFallTime )         
+        let p2s =  ((state.Player2.parachuteTime / 2) + state.Player2.freeFallTime ) 
+        match state.Player1.state with 
+        | InBoot ->
+            n.Player1.score <- state.Player1.score + p1s
+        | _ -> n.Player1.score <- state.Player1.score
         
+        match state.Player2.state with 
+        | InBoot -> n.Player2.score <- n.Player2.score + p2s
+        
+        | _ -> n.Player1.score <- state.Player1.score
+        
+        n
     | _ -> state
     

@@ -19,7 +19,8 @@ let cellHeight = 5
 let mapWidth = 160
 let mapHeight = 120
 
-type buonds = { x : int; y : int; width : int; height : int }
+//type buonds = { x : int; y : int; width : int; height : int }
+
 
 
 type ControllerButton =
@@ -39,16 +40,6 @@ type ControllerButton =
    | BUTTON_DPAD_LEFT = 13
    | BUTTON_DPAD_RIGHT = 14
 
-let screenBounds = { x = 0; y = 0; width = int screenWidth; height = int screenHeight }
-
-type Sprite =
-    {
-     name : string
-     image : SDLTexture.Texture
-     x: int
-     y : int
-    
-    }
 //type GameState =
 //    TitleScreen 
 //    | P1Win
@@ -62,7 +53,7 @@ type TreatzState =
       mutable GameState : Game
       textures : Map<string, SDLTexture.Texture> 
       Controllers : Set<ControllerButton> * Set<ControllerButton>
-      ThingsToRender: Sprite list
+      Sprites:     Map<byte,Rectangle>;
        }
 
 let treeDepth = 15
@@ -75,12 +66,7 @@ type RenderingContext =
 let update (state:TreatzState) : TreatzState =
     let pressed (code:ScanCode) = if state.PressedKeys.Contains code then true else false
     let update (scancode, f) state = if pressed scancode then f state else state
-    let createRect() = 
-        { x = state.Chaos.Next(0,(int screenWidth)-25) 
-          y = state.Chaos.Next(0,(int screenHeight)-25)                  
-          width = state.Chaos.Next(0,25)
-          height = state.Chaos.Next(0,25) }
-//    let updateController player =
+
     
     let mapping = [(ControllerButton.BUTTON_A, Fire);(ControllerButton.BUTTON_DPAD_LEFT, Left);(ControllerButton.BUTTON_DPAD_RIGHT, Right)]
 
@@ -139,17 +125,18 @@ let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option 
 
 
 let render(context:RenderingContext) (state:TreatzState) =
+   
     let blt tex dest =
         context.Renderer |> copy tex None dest |> ignore
-        
-    let titleScreen() =
-        let ts = state.ThingsToRender 
-                    |>  List.filter(fun x -> x.name = "titlescreen" ) 
-                    |> List.head 
 
-        //let src = { X = 0<px>; Y = 100<px>; Width=1000<px>; Height=100<px> } : SDLGeometry.Rectangle                
-        context.Renderer |> copy ts.image None None |> ignore
-
+    let bltf src dest =
+        context.Renderer |> copy state.textures.["font"] (Some src) (Some dest) |> ignore
+    let drawString (s:string) (x,y) =
+        let mutable i = 0
+        for c in s do
+            bltf (state.Sprites.[byte c]) ({X = (x + (i*16)) * 1<px>; Y = y * 1<px>; Width = 16<px>; Height = 16<px>}) 
+            i <- i + 1
+             
     let playerWin() player = ()
 
     let playing() =
@@ -180,11 +167,13 @@ let render(context:RenderingContext) (state:TreatzState) =
         
         | _ -> () 
         
-    
+        
         blt state.textures.["boot"] (Some <| state.GameState.Player1.bootrect)
         blt state.textures.["boot"] (Some <| state.GameState.Player2.bootrect)
         
-        
+        //bltf (state.Sprites.[byte 'A']) ({X = 0<px>; Y = 0<px>; Width = 8<px>; Height = 8<px>})
+        drawString (state.GameState.Player1.score.ToString()) (10,10)
+        drawString (state.GameState.Player2.score.ToString()) (700,10)
         ()
 
     // clear screen
@@ -255,11 +244,29 @@ let main() =
                 ("boot",loadTex @"..\..\..\..\images\boot.bmp" )
                 ("cat-falling",loadTex @"..\..\..\..\images\cat-falling.bmp" )
                 ("cat-parachute",loadTex @"..\..\..\..\images\cat-parachute.bmp" )
+                ("font", loadTex @"..\..\..\..\images\romfont8x8.bmp")           
             ] |> Map.ofList
+        
+        use bitmap = SDLSurface.loadBmp SDLPixel.RGB888Format @"..\..\..\..\images\romfont8x8.bmp"
+
+        bitmap
+        |> SDLSurface.setColorKey (Some {Red=255uy;Green=255uy;Blue=255uy;Alpha=0uy})
+        |> ignore
+
+        
+        let sprites = 
+            [0uy..255uy]
+            |> Seq.map(fun index-> (index, ( {X=8<px>*((index |> int) % 16); Y=8<px>*((index |> int) / 16);Width=8<px>;Height=8<px>})))
+            |> Map.ofSeq
+    
+        //let sprite = context.Sprites.[cell.Character]
+//         sprite
+//        |>* blitSprite {X=0<px>;Y=0<px>} context.WorkSurface
+
 
         {Chaos = System.Random()
          PressedKeys = Set.empty
-         ThingsToRender = []
+         Sprites = sprites
          GameState = StartGame()
          textures = tex
          Controllers = Set.empty, Set.empty

@@ -3,7 +3,9 @@ open SDLUtility
 open System
 /////
 let noMoreParachuting = 450.0
-
+let miaow =  
+    let p  = new System.Media.SoundPlayer(@"..\..\..\..\images\cat_meow_x.wav")
+    fun () -> p.Play()
 /////
 let chaos = System.Random(DateTime.Now.Millisecond)
 
@@ -161,6 +163,7 @@ let update (state:Game) =
             // jump from bus
             if isFire then
                 p.state <- FreeFalling
+                miaow()
                 // tood: need to centre this
                 p.pos.x <- (fst p.catbus).x 
                 p.pos.y <- (fst p.catbus).y
@@ -221,6 +224,7 @@ let update (state:Game) =
             player.state <- Splatted
         | Parachute when player.pos.y > groundLevel - bootSize.height && overlapBoot ->
             // landed in boot! (basic, this needs to take into account the boot height
+            miaow()
             player.state <- InBoot
         | _ -> ()
 

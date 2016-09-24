@@ -92,16 +92,16 @@ type Player =
     | Player2
     
 let render(context:RenderingContext) (state:TreatzState) =
-    let titleScreen =
+    let titleScreen() =
         let ts = state.ThingsToRender 
                     |>  List.filter(fun x -> x.name = "titlescreen" ) 
                     |> List.head 
 
-        let src = { X = 0<px>; Y = 100<px>; Width=1000<px>; Height=100<px> } : SDLGeometry.Rectangle                
-        context.Renderer |> copy ts.image None (Some src) |> ignore
+        //let src = { X = 0<px>; Y = 100<px>; Width=1000<px>; Height=100<px> } : SDLGeometry.Rectangle                
+        context.Renderer |> copy ts.image None None |> ignore
         
-    let playerWin player = ()
-    let playing =
+    let playerWin() player = ()
+    let playing() =
         ()
 
     // clear screen
@@ -113,7 +113,6 @@ let render(context:RenderingContext) (state:TreatzState) =
     |> ignore
     
     
-    context.Renderer |> SDLRender.present 
     
     context.Texture
     |> SDLTexture.update None context.Surface
@@ -121,12 +120,15 @@ let render(context:RenderingContext) (state:TreatzState) =
     context.Renderer |> SDLRender.copy context.Texture None None |> ignore
 
     match state.GameState with
-    | TitleScreen -> titleScreen 
-    | P1Win -> playerWin Player1
-    | P2Win -> playerWin Player2
-    | Playing -> playing 
+    | TitleScreen -> titleScreen ()
+    | P1Win -> playerWin() Player1
+    | P2Win -> playerWin() Player2
+    | Playing -> playing() 
     | Nope -> () 
 
+
+    context.Renderer |> SDLRender.present 
+    
     // delay to lock at 60fps (we could do extra work here)
     let frameTime = getTicks() - context.lastFrameTick
     if frameTime < delay_timei then delay(delay_timei - frameTime)
@@ -154,12 +156,13 @@ let main() =
 
     let state = 
         let magenta = {Red=255uy;Green=0uy;Blue=255uy;Alpha=0uy}
-        use tittleScreenBitmap = SDLSurface.loadBmp SDLPixel.RGB888Format @"..\..\..\..\images\titlescreen.bmp"
+        use tittleScreenBitmap = SDLSurface.loadBmp SDLPixel.RGB888Format @"..\..\..\..\images\title.bmp"
+      //  let r = {x = 0; y = 0; width = 0; height = 0}
         setKey tittleScreenBitmap magenta
         let tittleScreenTex = SDLTexture.fromSurface mainRenderer tittleScreenBitmap.Pointer
         {Chaos = System.Random()
          PressedKeys = Set.empty
-         ThingsToRender = [{x = 100; y = 100; name = "titlescreen"; image = tittleScreenTex }]
+         ThingsToRender = [{x = 0; y = 0; name = "titlescreen"; image = tittleScreenTex }]
          GameState = GameState.TitleScreen
          }
 

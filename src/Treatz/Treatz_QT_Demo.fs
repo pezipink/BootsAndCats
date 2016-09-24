@@ -163,10 +163,19 @@ let render(context:RenderingContext) (state:TreatzState) =
         
 
         match state.GameState.Player1.state with
-        | FreeFall -> 
+        | FreeFalling -> 
             blt state.textures.["cat-falling"] (Some <| state.GameState.Player1.prect)
+        | Parachute -> 
+            blt state.textures.["cat-parachute"] (Some <| state.GameState.Player1.prect)
         | _ -> () 
         
+        match state.GameState.Player2.state with
+        | FreeFalling -> 
+            blt state.textures.["cat-falling"] (Some <| state.GameState.Player2.prect)
+        | Parachute -> 
+            blt state.textures.["cat-parachute"] (Some <| state.GameState.Player2.prect)
+        
+        | _ -> () 
         
         //blt state.textures.["boot"] (Some <| state.GameState.Player2.bootrect)
     

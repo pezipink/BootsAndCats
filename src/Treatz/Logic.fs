@@ -136,9 +136,11 @@ let update (state:Game) =
             if isLeft then
                 // apply -x force + wind
                 p.pos.vx <- -veerFreefall + state.WindFactor
-            if isRight then
+            elif isRight then
                 // apply x force + wind
                 p.pos.vx <- veerFreefall + state.WindFactor
+            else 
+                p.pos.vx <- 0.0
             p.pos.Update()            
         | Parachute -> 
             p.parachuteTime <- p.parachuteTime + 1
@@ -146,9 +148,11 @@ let update (state:Game) =
             if isLeft then
                 // apply -x force + wind
                 p.pos.vx <- -veerParachute + state.WindFactor
-            if isRight then
+            elif isRight then
                 // apply x force + wind
                 p.pos.vx <- veerParachute + state.WindFactor
+            else 
+                p.pos.vx <- 0.0
             p.pos.Update()
         | _ -> ()
 

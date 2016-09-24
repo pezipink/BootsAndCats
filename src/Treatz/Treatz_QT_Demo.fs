@@ -224,6 +224,7 @@ let main() =
         let tex = 
             [
                 ("titlescreen",loadTex @"..\..\..\..\images\title.bmp" )
+                ("background",loadTex @"..\..\..\..\images\bg.bmp" )
                 ("catbus",loadTex @"..\..\..\..\images\catbus.bmp" )
                 ("boot",loadTex @"..\..\..\..\images\boot.bmp" )
                 ("cat-falling",loadTex @"..\..\..\..\images\cat-falling.bmp" )

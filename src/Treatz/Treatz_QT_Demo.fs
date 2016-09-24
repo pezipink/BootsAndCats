@@ -22,6 +22,22 @@ let mapHeight = 120
 type buonds = { x : int; y : int; width : int; height : int }
 
 
+type ControllerButton =
+   | BUTTON_A = 0
+   | BUTTON_B = 1
+   | BUTTON_X = 2
+   | BUTTON_Y = 3
+   | BUTTON_BACK = 4
+   | BUTTON_GUIDE = 5
+   | BUTTON_START = 6
+   | BUTTON_LEFTSTICK = 7
+   | BUTTON_RIGHTSTICK = 8
+   | BUTTON_LEFTSHOULDER = 9
+   | BUTTON_RIGHTSHOULDER = 10
+   | BUTTON_DPAD_UP = 11
+   | BUTTON_DPAD_DOWN = 12
+   | BUTTON_DPAD_LEFT = 13
+   | BUTTON_DPAD_RIGHT = 14
 
 let screenBounds = { x = 0; y = 0; width = int screenWidth; height = int screenHeight }
 
@@ -31,6 +47,7 @@ type Sprite =
      image : SDLTexture.Texture
      x: int
      y : int
+    
     }
 //type GameState =
 //    TitleScreen 
@@ -44,6 +61,7 @@ type TreatzState =
       Chaos : System.Random 
       mutable GameState : Game
       textures : Map<string, SDLTexture.Texture> 
+      Controllers : Set<ControllerButton> * Set<ControllerButton>
       ThingsToRender: Sprite list
        }
 
@@ -62,6 +80,21 @@ let update (state:TreatzState) : TreatzState =
           y = state.Chaos.Next(0,(int screenHeight)-25)                  
           width = state.Chaos.Next(0,25)
           height = state.Chaos.Next(0,25) }
+//    let updateController player =
+    
+    let mapping = [(ControllerButton.BUTTON_A, Fire);(ControllerButton.BUTTON_DPAD_LEFT, Left);(ControllerButton.BUTTON_DPAD_RIGHT, Right)]
+
+    let getController buttons = 
+        buttons
+        |> Set.toList 
+        |> List.choose(fun b -> 
+            List.tryPick(fun (x,y) -> if x = b then Some y else None) mapping)
+        |> Set.ofList
+
+    state.GameState.Player1.buttonsPressed <- getController (fst state.Controllers)      
+    state.GameState.Player2.buttonsPressed <- getController (snd state.Controllers)      
+    
+    if state.GameState.Player1.buttonsPressed.IsEmpty |> not then System.Diagnostics.Debugger.Break()
     state.GameState <- Logic.update state.GameState
     state
     
@@ -81,16 +114,16 @@ let rec eventPump (renderHandler:'TState->unit) (eventHandler:SDLEvent.Event->'T
 
 let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option =
     match event with
-//    | SDLEvent.ControllerButtonDown event  ->
-//        if event.Which = 0 then 
-//            Some({ state with Controllers = Set.add (enum<ControllerButton>(int event.Button)) (fst state.Controllers), (snd state.Controllers) } )
-//        else
-//            Some({ state with Controllers = (fst state.Controllers), Set.add (enum<ControllerButton>(int event.Button))(snd state.Controllers) } )
-//    | SDLEvent.ControllerButtonUp event  ->
-//        if event.Which = 0 then 
-//            Some({ state with Controllers = Set.remove (enum<ControllerButton>(int event.Button)) (fst state.Controllers), (snd state.Controllers) } )
-//        else
-//            Some({ state with Controllers = (fst state.Controllers), Set.remove (enum<ControllerButton>(int event.Button))(snd state.Controllers) } )
+    | SDLEvent.ControllerButtonDown event  ->
+        if event.Which = 0 then 
+            Some({ state with Controllers = Set.add (enum<ControllerButton>(int event.Button)) (fst state.Controllers), (snd state.Controllers) } )
+        else
+            Some({ state with Controllers = (fst state.Controllers), Set.add (enum<ControllerButton>(int event.Button))(snd state.Controllers) } )
+    | SDLEvent.ControllerButtonUp event  ->
+        if event.Which = 0 then 
+            Some({ state with Controllers = Set.remove (enum<ControllerButton>(int event.Button)) (fst state.Controllers), (snd state.Controllers) } )
+        else
+            Some({ state with Controllers = (fst state.Controllers), Set.remove (enum<ControllerButton>(int event.Button))(snd state.Controllers) } )
     | SDLEvent.KeyDown keyDetails when keyDetails.Keysym.Scancode = ScanCode.Escape ->
         None
     | SDLEvent.Quit _ -> 
@@ -202,6 +235,7 @@ let main() =
          ThingsToRender = []
          GameState = StartGame()
          textures = tex
+         Controllers = Set.empty, Set.empty
          }
 
     eventPump (render context) handleEvent update state

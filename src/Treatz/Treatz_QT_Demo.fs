@@ -6,8 +6,6 @@ open SDLPixel
 open SDLRender
 open SDLKeyboard
 
-open QuadTree
-
 let fps = 60.0;
 let delay_time = 1000.0 / fps;
 let delay_timei = uint32 delay_time
@@ -21,14 +19,14 @@ let cellHeight = 5
 let mapWidth = 160
 let mapHeight = 120
 
+type buonds = { x : int; y : int; width : int; height : int }
+
 let screenBounds = { x = 0; y = 0; width = int screenWidth; height = int screenHeight }
 
 type TreatzState =
     { PressedKeys : Set<ScanCode> 
-      QT : QuadBounds QuadTree
-      Items : QuadBounds list
-      rng : System.Random
-      }
+      rng : System.Random }
+
 let treeDepth = 15
 type RenderingContext =
     {Renderer:SDLRender.Renderer;
@@ -44,13 +42,6 @@ let update (state:TreatzState) : TreatzState =
           y = state.rng.Next(0,(int screenHeight)-25)                  
           width = state.rng.Next(0,25)
           height = state.rng.Next(0,25) }
-    // yuuuuck!
-    let movement = 
-        [
-        ScanCode.Space , fun state ->  { state with Items  = (createRect ()) :: state.Items; PressedKeys = state.PressedKeys.Remove(ScanCode.Space) }
-//        ScanCode.Space , fun state ->  { state with Items  = (createRect ()) :: state.Items}
-        ]
-    let state = (state,movement) ||> List.fold (fun acc f -> update f acc)
     state
 
 let rec eventPump (renderHandler:'TState->unit) (eventHandler:SDLEvent.Event->'TState->'TState option) (update:'TState->'TState) (state:'TState) : unit =
@@ -89,58 +80,6 @@ let render(context:RenderingContext) (state:TreatzState) =
     |> SDLSurface.fillRect None {Red=0uy;Green=0uy;Blue=0uy;Alpha=255uy}
     |> ignore
     
-    // render the quadtree recursively, outlining the regions and the things in them in the same colour 
-    let rec drawTree currentDepth bounds tree = 
-        let n = (255uy / (byte treeDepth)) * ((byte treeDepth) - (byte currentDepth))
-        context.Renderer |> SDLRender.setDrawColor(n,0uy,0uy,0uy) |> ignore
-        
-        context.Renderer 
-        |> SDLRender.drawRect {X=(bounds.x)*1<px>;Y=(bounds.y)*1<px>;Width=bounds.width*1<px>;Height=bounds.height*1<px>}
-        |> ignore
-        context.Renderer |> SDLRender.setDrawColor(n,n,n,0uy) |> ignore
-        match tree with
-        | Leaf data -> 
-            for item in data do 
-                context.Renderer
-                |> SDLRender.drawRect {X=(item.x)*1<px>;Y=(item.y)*1<px>;Width=item.width*1<px>;Height=item.height*1<px>}
-                |> ignore
-        | Branch(data,TR,BR,BL,TL) -> 
-            for item in data do 
-                context.Renderer
-                |> SDLRender.drawRect {X=(item.x)*1<px>;Y=(item.y)*1<px>;Width=item.width*1<px>;Height=item.height*1<px>}
-                |> ignore
-            let TRB = { x = bounds.x + (bounds.width / 2)
-                        y = bounds.y
-                        width = bounds.width / 2 
-                        height = bounds.height / 2 }
-            drawTree (currentDepth+1) TRB TR
-
-            let BRB = { x = bounds.x + (bounds.width / 2)
-                        y = bounds.y + (bounds.height / 2)
-                        width = bounds.width / 2 
-                        height = bounds.height / 2 }
-            drawTree (currentDepth+1) BRB BR
-
-            let BLB = { x = bounds.x 
-                        y = bounds.y + (bounds.height / 2)
-                        width = bounds.width / 2 
-                        height = bounds.height / 2 }
-            drawTree (currentDepth+1) BLB BL
-
-            let TLB = { x = bounds.x 
-                        y = bounds.y 
-                        width = bounds.width / 2 
-                        height = bounds.height / 2 }
-            drawTree (currentDepth+1) TLB TL
-    
-
-    context.Texture
-    |> SDLTexture.update None context.Surface
-    |> ignore
-
-    context.Renderer |> SDLRender.copy context.Texture None None |> ignore
-    let qt = create (id) 3 10 {x = 0; y = 0; width = 800; height = 600} state.Items
-    drawTree 0 screenBounds qt
     
     context.Renderer |> SDLRender.present 
 
@@ -151,7 +90,6 @@ let render(context:RenderingContext) (state:TreatzState) =
 
 let main() = 
     use system = new SDL.System(SDL.Init.Video ||| SDL.Init.Events)
-    //use mainWindow = SDLWindow.create "Dragon Treats" 100<px> 100<px> screenWidth screenHeight 0u
     use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.FullScreen) // FULLSCREEN!
     use mainRenderer = SDLRender.create mainWindow -1 SDLRender.Flags.Accelerated
     use surface = SDLSurface.createRGB (screenWidth,screenHeight,32<bit/px>) (0x00FF0000u,0x0000FF00u,0x000000FFu,0x00000000u)    
@@ -161,9 +99,7 @@ let main() =
     let context =  { Renderer = mainRenderer; Texture = mainTexture; Surface = surface; lastFrameTick = getTicks() }
     let state = 
         {rng = System.Random()
-         PressedKeys = Set.empty
-         QT = Leaf []
-         Items = [] }
+         PressedKeys = Set.empty }
 
     eventPump (render context) handleEvent update state
 

@@ -46,19 +46,11 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="QuadTree.fs" />
     <None Include="App.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="paket.references" />
     <None Include="paket.template" />
-    <Compile Include="CommonData.fs" />
-    <Compile Include="LevelGen.fs" />
-    <Compile Include="TreatzGame.fs" />
-    <Compile Include="Behaviours.fs" />
-    <Compile Include="PathFinding.fs" />
-    <Compile Include="Intelligence.fs" />
-    <Compile Include="Treatz.fs" />
     <Compile Include="Treatz_QT_Demo.fs" />
     <None Include="WooPlayground.fsx" />
   </ItemGroup>

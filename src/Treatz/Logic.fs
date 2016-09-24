@@ -1,7 +1,10 @@
 ﻿module Logic
 open SDLUtility
 open System
+/////
+let noMoreParachuting = 450.0
 
+/////
 let chaos = System.Random(DateTime.Now.Millisecond)
 
 let screenWidth = 800.0;
@@ -11,7 +14,7 @@ let screenHeight = 600.0;
 let groundLevel = 600.0;
 // default ground level where the boots are
 
-let busSpeed = 5.0
+let busSpeed = 2.5
 
 // default falling speeds
 let freeFallSpeed = 10.0
@@ -37,8 +40,9 @@ type Size =
 
 // todo: sizes
 let catbusSize = {width = 100.0; height = 50.0;}
-let bootSize = {width = 50.0; height = 100.0;}
+let bootSize = {width = 80.0; height = 100.0;}
 let catSize =  {width = 50.0; height = 100.0;}
+let cloudSize = {width = 50.0; height = 100.0;}
 
 type Position = 
     {
@@ -94,12 +98,13 @@ type Player =
            member this.prect: SDLGeometry.Rectangle =
             let l,s = this.pos, this.size
             { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
-   
+           
            
 type Game =
     {
         Player1 : Player
         Player2 : Player
+        mutable Cloud : Position * Size
         mutable WindFactor : float 
         mutable State : GameState
     }
@@ -192,6 +197,7 @@ let StartGame() =
         {
             Player1 = Player.Create()
             Player2 = Player.Create()
+            Cloud = Position.Zero() , cloudSize
             WindFactor = wind
             State = Playing
         }
@@ -203,8 +209,6 @@ let StartGame() =
     (fst state.Player2.boot).x <- (screenWidth / 4.0) * 3.0
     (fst state.Player1.boot).y <- screenHeight - bootSize.height
     (fst state.Player2.boot).y <- screenHeight - bootSize.height
-    
-
-
-
+   
+    (fst state.Cloud).x <- (fst state.Cloud).x + state.WindFactor
     state

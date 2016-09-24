@@ -154,7 +154,9 @@ let render(context:RenderingContext) (state:TreatzState) =
     let playing() =
         // always draw the catbuses and boots
         blt state.textures.["background"] None
-    
+        
+        blt state.textures.["cloud"] (Some <| state.GameState.Player1.bootrect)
+        
         blt state.textures.["catbus"] (Some <| state.GameState.Player1.busrect)
         blt state.textures.["catbus"] (Some <| state.GameState.Player2.busrect)
         
@@ -246,6 +248,7 @@ let main() =
             [
                 ("titlescreen",loadTex @"..\..\..\..\images\title.bmp" )
                 ("background",loadTex @"..\..\..\..\images\bg.bmp" )
+                ("cloud",loadTex @"..\..\..\..\images\cloud.bmp" )
                 ("catbus",loadTex @"..\..\..\..\images\catbus.bmp" )
                 ("boot",loadTex @"..\..\..\..\images\boot.bmp" )
                 ("cat-falling",loadTex @"..\..\..\..\images\cat-falling.bmp" )

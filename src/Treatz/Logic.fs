@@ -91,6 +91,9 @@ type Player =
            member this.bootrect: SDLGeometry.Rectangle =
             let l,s = this.boot 
             { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
+           member this.prect: SDLGeometry.Rectangle =
+            let l,s = this.pos, this.size
+            { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
    
            
 type Game =

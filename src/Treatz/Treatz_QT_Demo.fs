@@ -94,7 +94,7 @@ let update (state:TreatzState) : TreatzState =
     state.GameState.Player1.buttonsPressed <- getController (fst state.Controllers)      
     state.GameState.Player2.buttonsPressed <- getController (snd state.Controllers)      
     
-    if state.GameState.Player1.buttonsPressed.IsEmpty |> not then System.Diagnostics.Debugger.Break()
+  //  if state.GameState.Player1.buttonsPressed.IsEmpty |> not then System.Diagnostics.Debugger.Break()
     state.GameState <- Logic.update state.GameState
     state
     
@@ -140,7 +140,7 @@ let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option 
 
 let render(context:RenderingContext) (state:TreatzState) =
     let blt tex dest =
-        context.Renderer |> copy tex None (Some dest) |> ignore
+        context.Renderer |> copy tex None dest |> ignore
         
     let titleScreen() =
         let ts = state.ThingsToRender 
@@ -153,12 +153,24 @@ let render(context:RenderingContext) (state:TreatzState) =
     let playerWin() player = ()
     let playing() =
         // always draw the catbuses and boots
-        blt state.textures.["catbus"] state.GameState.Player1.busrect
-        blt state.textures.["catbus"] state.GameState.Player2.busrect
+        blt state.textures.["background"] None
+    
+        blt state.textures.["catbus"] (Some <| state.GameState.Player1.busrect)
+        blt state.textures.["catbus"] (Some <| state.GameState.Player2.busrect)
         
-        blt state.textures.["boot"] state.GameState.Player1.bootrect
-        blt state.textures.["boot"] state.GameState.Player2.bootrect
+        blt state.textures.["boot"] (Some <| state.GameState.Player1.bootrect)
+        blt state.textures.["boot"] (Some <| state.GameState.Player2.bootrect)
         
+
+        match state.GameState.Player1.state with
+        | FreeFall -> 
+            blt state.textures.["cat-falling"] (Some <| state.GameState.Player1.prect)
+        | _ -> () 
+        
+        
+        //blt state.textures.["boot"] (Some <| state.GameState.Player2.bootrect)
+    
+    
         
         ()
 
@@ -194,7 +206,7 @@ let render(context:RenderingContext) (state:TreatzState) =
 
 
 let main() = 
-    use system = new SDL.System(SDL.Init.Video ||| SDL.Init.Events)
+    use system = new SDL.System(SDL.Init.Video ||| SDL.Init.Events ||| SDL.Init.GameController)
     use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.Resizable) // FULLSCREEN!
     //use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.FullScreen) // FULLSCREEN!    
     use mainRenderer = SDLRender.create mainWindow -1 SDLRender.Flags.Accelerated

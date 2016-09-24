@@ -4,7 +4,9 @@ open System
 
 let chaos = System.Random(DateTime.Now.Millisecond)
 
-let groundLevel = 640.0
+let screenWidth = 640.0;
+
+let groundLevel = 480.0;
 // default ground level where the boots are
 
 
@@ -30,6 +32,11 @@ type Size =
         height : float 
     }
 
+// todo: sizes
+let catbusSize = {width = 100.0; height = 50.0;}
+let bootSize = {width = 50.0; height = 100.0;}
+let catSize =  {width = 50.0; height = 100.0;}
+
 type Position = 
     {
         mutable x : float
@@ -38,9 +45,15 @@ type Position =
         mutable vy : float
     } 
     with 
+    static member Zero() =
+        { x = 0.; y = 0.; vx=0.; vy = 0. }
     member this.Update() = 
             this.x <- this.x + this.vx
             this.y <- this.y + this.vy
+
+type GameState =
+    | Playing
+    | GameOver
 
 type PlayerState =
     | InBus
@@ -60,12 +73,21 @@ type Player =
         mutable parachuteTime : int
         mutable buttonsPressed : Set<Button>
     }
-    
+     with static member Create() =
+            { state = PlayerState.InBus
+              catbus = Position.Zero(), catbusSize
+              boot = Position.Zero(), bootSize
+              pos = Position.Zero()
+              size = catSize
+              freeFallTime = 0
+              parachuteTime = 0
+              buttonsPressed = Set.empty  }
 type Game =
     {
         Player1 : Player
         Player2 : Player
         mutable WindFactor : float 
+        mutable State : GameState
     }
 
 
@@ -84,17 +106,19 @@ let update (state:Game) =
             if isFire then
                 p.state <- FreeFalling
                 // tood: need to centre this
-                p.pos.x <- p.catbus.x 
-                p.pos.y <- p.catbus.y
+                p.pos.x <- (fst p.catbus).x 
+                p.pos.y <- (fst p.catbus).y
                 p.pos.vx <- 0.0
                 p.pos.vy <- freeFallSpeed
         | FreeFalling -> 
             // open para
             // todo: only allow this to happen when higher than a certain height
+            p.freeFallTime <- p.freeFallTime + 1
             if isFire then
                 p.state <- Parachute
                 p.pos.vx <- 0.0
                 p.pos.vy <- parachuteFallSpeed
+
             if isLeft then
                 // apply -x force + wind
                 p.pos.vx <- -veerFreefall + state.WindFactor
@@ -103,6 +127,7 @@ let update (state:Game) =
                 p.pos.vx <- veerFreefall + state.WindFactor
             p.pos.Update()            
         | Parachute -> 
+            p.parachuteTime <- p.parachuteTime + 1
             // weee
             if isLeft then
                 // apply -x force + wind
@@ -118,10 +143,36 @@ let update (state:Game) =
     
     // collision detection
     let cdet player = 
+        let overlapBoot = 
+            let loc,sz = player.boot
+            player.pos.x >= loc.x && player.pos.x <= loc.x + sz.width
+               
         match player.state with
         | FreeFalling when player.pos.y > groundLevel -> 
             // splat!
             player.state <- Splatted
-        | Parachute when player.pos y > groundLevel & player.pos.x >= player.boot.x 
+        | Parachute when player.pos.y > groundLevel && overlapBoot ->
+            // landed in boot! (basic, this needs to take into account the boot height
+            player.state <- InBoot
+        | _ -> ()
 
+    cdet state.Player1
+    cdet state.Player2
+
+    match state.Player1.state, state.Player2.state with
+    | (InBoot | Splatted), (InBoot | Splatted) -> 
+        state.State <- GameOver
+    | _ -> ()
     state
+
+
+let StartGame() =
+    let wind =
+        let n = chaos.Next(6) |> double
+        if chaos.Next(2) = 1 then -n else n
+    {
+        Player1 = Player.Create()
+        Player2 = Player.Create()
+        WindFactor = wind
+        State = Playing
+    }

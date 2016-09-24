@@ -17,8 +17,6 @@ let groundLevel = 600.0;
 let busSpeed = 2.5
 let cloudSpeed = 0.8
 
-
-
 let wind() =
     let n = chaos.NextDouble() * 3.0
     if chaos.Next(2) = 1 then -n else n
@@ -115,17 +113,25 @@ type Game =
     {
         Player1 : Player
         Player2 : Player
-        mutable Cloud : Position * Size
+        mutable Cloud : (Position * Size) list
         mutable WindFactor : float 
         mutable State : GameState
     }
+let createClouds =
+  [
+   ({ Position.Zero() with x = (float <| chaos.Next(0, 200)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
+   ({ Position.Zero() with x = (float <| chaos.Next(200, (int screenHeight))) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
+   ({ Position.Zero() with x = (float <| chaos.Next(45, 250)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
+   ({ Position.Zero() with x = (float <| chaos.Next(100, 400)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
+   ({ Position.Zero() with x = (float <| chaos.Next(300, 500)); y = (float <| chaos.Next(20, 200))}, cloudSize)
+   ]
 
 let StartGame() =
     let state = 
         {
             Player1 = Player.Create()
             Player2 = Player.Create()
-            Cloud = { Position.Zero() with y = (float <| chaos.Next(20, 200))}, cloudSize
+            Cloud = createClouds
             WindFactor = wind()
             State = Playing
         }
@@ -137,10 +143,11 @@ let StartGame() =
     (fst state.Player2.boot).x <- (screenWidth / 4.0) * 3.0
     (fst state.Player1.boot).y <- screenHeight - bootSize.height
     (fst state.Player2.boot).y <- screenHeight - bootSize.height
-    
-    (fst state.Cloud).vx <- state.WindFactor
-    if state.WindFactor <= 0. then
-        (fst state.Cloud).x <- screenWidth - ((snd state.Cloud).width)
+    let cloudy cloud =
+        (fst cloud).vx <- state.WindFactor * cloudSpeed
+        if state.WindFactor <= 0. then
+            (fst cloud).x <- screenWidth - ((snd cloud).width)
+    state.Cloud |>  List.iter(cloudy)
 
     state
 let update (state:Game) =
@@ -148,7 +155,7 @@ let update (state:Game) =
     (fst state.Player1.catbus).Update()
     (fst state.Player2.catbus).Update()
     // always move the clouds with the wind
-    (fst state.Cloud).Update()
+    state.Cloud |> List.iter(fun x -> (fst x).Update() )
     let updatePlayer p =
         let isLeft = p.buttonsPressed.Contains Button.Left
         let isRight = p.buttonsPressed.Contains Button.Right

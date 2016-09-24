@@ -153,14 +153,14 @@ let render(context:RenderingContext) (state:TreatzState) =
     let playerWin() player = ()
 
     let playing() =
-        let cloudRect: SDLGeometry.Rectangle =
-            let l,s = state.GameState.Cloud 
+        let cloudRect (cloud : Position * Size) : SDLGeometry.Rectangle =
+            let l,s = cloud 
             { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
 
         // always draw the catbuses and boots
         blt state.textures.["background"] None
         
-        blt state.textures.["cloud"] (Some <| cloudRect)
+        state.GameState.Cloud |> List.iter(fun cp ->  blt state.textures.["cloud"] (Some <| cloudRect cp))
         
         blt state.textures.["catbus"] (Some <| state.GameState.Player1.busrect)
         blt state.textures.["catbus"] (Some <| state.GameState.Player2.busrect)

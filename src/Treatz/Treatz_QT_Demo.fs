@@ -5,7 +5,7 @@ open SDLGeometry
 open SDLPixel
 open SDLRender
 open SDLKeyboard
-
+open Logic
 let fps = 60.0;
 let delay_time = 1000.0 / fps;
 let delay_timei = uint32 delay_time
@@ -21,6 +21,8 @@ let mapHeight = 120
 
 type buonds = { x : int; y : int; width : int; height : int }
 
+
+
 let screenBounds = { x = 0; y = 0; width = int screenWidth; height = int screenHeight }
 
 type Sprite =
@@ -30,17 +32,18 @@ type Sprite =
      x: int
      y : int
     }
-type GameState =
-    TitleScreen 
-    | P1Win
-    | P2Win
-    | Playing
-    | Nope // both Splat (show splat?)
+//type GameState =
+//    TitleScreen 
+//    | P1Win
+//    | P2Win
+//    | Playing
+//    | Nope // both Splat (show splat?)
     
 type TreatzState =
     { PressedKeys : Set<ScanCode> 
       Chaos : System.Random 
-      GameState : GameState
+      mutable GameState : Game
+      textures : Map<string, SDLTexture.Texture> 
       ThingsToRender: Sprite list
        }
 
@@ -59,7 +62,9 @@ let update (state:TreatzState) : TreatzState =
           y = state.Chaos.Next(0,(int screenHeight)-25)                  
           width = state.Chaos.Next(0,25)
           height = state.Chaos.Next(0,25) }
+    state.GameState <- Logic.update state.GameState
     state
+    
 
 let rec eventPump (renderHandler:'TState->unit) (eventHandler:SDLEvent.Event->'TState->'TState option) (update:'TState->'TState) (state:'TState) : unit =
     match SDLEvent.pollEvent() with
@@ -76,6 +81,16 @@ let rec eventPump (renderHandler:'TState->unit) (eventHandler:SDLEvent.Event->'T
 
 let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option =
     match event with
+//    | SDLEvent.ControllerButtonDown event  ->
+//        if event.Which = 0 then 
+//            Some({ state with Controllers = Set.add (enum<ControllerButton>(int event.Button)) (fst state.Controllers), (snd state.Controllers) } )
+//        else
+//            Some({ state with Controllers = (fst state.Controllers), Set.add (enum<ControllerButton>(int event.Button))(snd state.Controllers) } )
+//    | SDLEvent.ControllerButtonUp event  ->
+//        if event.Which = 0 then 
+//            Some({ state with Controllers = Set.remove (enum<ControllerButton>(int event.Button)) (fst state.Controllers), (snd state.Controllers) } )
+//        else
+//            Some({ state with Controllers = (fst state.Controllers), Set.remove (enum<ControllerButton>(int event.Button))(snd state.Controllers) } )
     | SDLEvent.KeyDown keyDetails when keyDetails.Keysym.Scancode = ScanCode.Escape ->
         None
     | SDLEvent.Quit _ -> 
@@ -87,11 +102,13 @@ let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option 
     | _ -> Some state
         // core logic function here
         
-type Player = 
-    Player1
-    | Player2
     
+
+
 let render(context:RenderingContext) (state:TreatzState) =
+    let blt tex dest =
+        context.Renderer |> copy tex None (Some dest) |> ignore
+        
     let titleScreen() =
         let ts = state.ThingsToRender 
                     |>  List.filter(fun x -> x.name = "titlescreen" ) 
@@ -102,6 +119,14 @@ let render(context:RenderingContext) (state:TreatzState) =
         
     let playerWin() player = ()
     let playing() =
+        // always draw the catbuses and boots
+        blt state.textures.["catbus"] state.GameState.Player1.busrect
+        blt state.textures.["catbus"] state.GameState.Player2.busrect
+        
+        blt state.textures.["boot"] state.GameState.Player1.bootrect
+        blt state.textures.["boot"] state.GameState.Player2.bootrect
+        
+        
         ()
 
     // clear screen
@@ -119,12 +144,12 @@ let render(context:RenderingContext) (state:TreatzState) =
     |> ignore
     context.Renderer |> SDLRender.copy context.Texture None None |> ignore
 
-    match state.GameState with
-    | TitleScreen -> titleScreen ()
-    | P1Win -> playerWin() Player1
-    | P2Win -> playerWin() Player2
+    match state.GameState.State with
+//    | TitleScreen -> titleScreen ()
+//    | P1Win -> playerWin() Player1
+//    | P2Win -> playerWin() Player2
     | Playing -> playing() 
-    | Nope -> () 
+    | GameOver -> () 
 
 
     context.Renderer |> SDLRender.present 
@@ -138,6 +163,7 @@ let render(context:RenderingContext) (state:TreatzState) =
 let main() = 
     use system = new SDL.System(SDL.Init.Video ||| SDL.Init.Events)
     use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.Resizable) // FULLSCREEN!
+    //use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.FullScreen) // FULLSCREEN!    
     use mainRenderer = SDLRender.create mainWindow -1 SDLRender.Flags.Accelerated
     use surface = SDLSurface.createRGB (screenWidth,screenHeight,32<bit/px>) (0x00FF0000u,0x0000FF00u,0x000000FFu,0x00000000u)    
     use mainTexture = mainRenderer |> SDLTexture.create SDLPixel.RGB888Format SDLTexture.Access.Streaming (screenWidth,screenHeight)
@@ -156,14 +182,26 @@ let main() =
 
     let state = 
         let magenta = {Red=255uy;Green=0uy;Blue=255uy;Alpha=0uy}
-        use tittleScreenBitmap = SDLSurface.loadBmp SDLPixel.RGB888Format @"..\..\..\..\images\title.bmp"
-      //  let r = {x = 0; y = 0; width = 0; height = 0}
-        setKey tittleScreenBitmap magenta
-        let tittleScreenTex = SDLTexture.fromSurface mainRenderer tittleScreenBitmap.Pointer
+        let loadTex file =
+            use bmp = SDLSurface.loadBmp SDLPixel.RGB888Format file
+            setKey bmp magenta
+            SDLTexture.fromSurface mainRenderer bmp.Pointer
+        
+        //use tittleScreenBitmap = SDLSurface.loadBmp SDLPixel.RGB888Format @"..\..\..\..\images\title.bmp"
+        let tex = 
+            [
+                ("titlescreen",loadTex @"..\..\..\..\images\title.bmp" )
+                ("catbus",loadTex @"..\..\..\..\images\catbus.bmp" )
+                ("boot",loadTex @"..\..\..\..\images\boot.bmp" )
+                ("cat-falling",loadTex @"..\..\..\..\images\cat-falling.bmp" )
+                ("cat-parachute",loadTex @"..\..\..\..\images\cat-parachute.bmp" )
+            ] |> Map.ofList
+
         {Chaos = System.Random()
          PressedKeys = Set.empty
-         ThingsToRender = [{x = 0; y = 0; name = "titlescreen"; image = tittleScreenTex }]
-         GameState = GameState.TitleScreen
+         ThingsToRender = []
+         GameState = StartGame()
+         textures = tex
          }
 
     eventPump (render context) handleEvent update state

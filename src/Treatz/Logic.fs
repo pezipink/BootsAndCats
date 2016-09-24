@@ -1,14 +1,17 @@
 ﻿module Logic
-
+open SDLUtility
 open System
 
 let chaos = System.Random(DateTime.Now.Millisecond)
 
-let screenWidth = 640.0;
+let screenWidth = 800.0;
 
-let groundLevel = 480.0;
+let screenHeight = 600.0;
+
+let groundLevel = 600.0;
 // default ground level where the boots are
 
+let busSpeed = 5.0
 
 // default falling speeds
 let freeFallSpeed = 10.0
@@ -82,6 +85,14 @@ type Player =
               freeFallTime = 0
               parachuteTime = 0
               buttonsPressed = Set.empty  }
+           member this.busrect: SDLGeometry.Rectangle =
+            let l,s = this.catbus 
+            { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
+           member this.bootrect: SDLGeometry.Rectangle =
+            let l,s = this.boot 
+            { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
+   
+           
 type Game =
     {
         Player1 : Player
@@ -170,9 +181,23 @@ let StartGame() =
     let wind =
         let n = chaos.Next(6) |> double
         if chaos.Next(2) = 1 then -n else n
-    {
-        Player1 = Player.Create()
-        Player2 = Player.Create()
-        WindFactor = wind
-        State = Playing
-    }
+    let state = 
+        {
+            Player1 = Player.Create()
+            Player2 = Player.Create()
+            WindFactor = wind
+            State = Playing
+        }
+    (fst state.Player2.catbus).x <- screenWidth - ((snd state.Player2.catbus).width)
+    (fst state.Player1.catbus).vx <- busSpeed
+    (fst state.Player2.catbus).vx <- -busSpeed
+    
+    (fst state.Player1.boot).x <- screenWidth / 4.0
+    (fst state.Player2.boot).x <- (screenWidth / 4.0) * 3.0
+    (fst state.Player1.boot).y <- screenHeight - bootSize.height
+    (fst state.Player2.boot).y <- screenHeight - bootSize.height
+    
+
+
+
+    state

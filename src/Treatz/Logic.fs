@@ -121,7 +121,7 @@ type Game =
         mutable WindFactor : float 
         mutable State : GameState
     }
-let createClouds =
+let createClouds() =
   [
    ({ Position.Zero() with x = (float <| chaos.Next(0, 200)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
    ({ Position.Zero() with x = (float <| chaos.Next(200, (int screenHeight))) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
@@ -135,7 +135,7 @@ let StartGame() =
         {
             Player1 = Player.Create()
             Player2 = Player.Create()
-            Cloud = createClouds
+            Cloud = createClouds()
             WindFactor = wind()
             State = Playing
         }
@@ -149,8 +149,8 @@ let StartGame() =
     (fst state.Player2.boot).y <- screenHeight - bootSize.height
     let cloudy cloud =
         (fst cloud).vx <- state.WindFactor * cloudSpeed
-        if state.WindFactor <= 0. then
-            (fst cloud).x <- screenWidth - ((snd cloud).width)
+//        if state.WindFactor <= 0. then
+//            (fst cloud).x <- screenWidth - ((snd cloud).width)
     state.Cloud |>  List.iter(cloudy)
 
     state
@@ -228,11 +228,16 @@ let update (state:Game) =
         match player.state with
         | FreeFalling when player.pos.y > groundLevel -> 
             // splat!
+        
             player.state <- Splatted
+        
         | Parachute when player.pos.y > groundLevel - bootSize.height && overlapBoot ->
             // landed in boot! (basic, this needs to take into account the boot height
             miaow()
             player.state <- InBoot
+        | Parachute when player.pos.y > groundLevel ->
+            player.state <- Splatted
+        
         | _ -> ()
 
     cdet state.Player1
@@ -252,7 +257,7 @@ let update (state:Game) =
         match state.Player2.state with 
         | InBoot -> n.Player2.score <- n.Player2.score + p2s
         
-        | _ -> n.Player1.score <- state.Player1.score
+        | _ -> n.Player2.score <- state.Player2.score
         
         n
     | _ -> state

@@ -15,6 +15,9 @@ let groundLevel = 600.0;
 // default ground level where the boots are
 
 let busSpeed = 2.5
+let cloudSpeed = 0.8
+
+
 
 let wind() =
     let n = chaos.NextDouble() * 3.0
@@ -47,7 +50,7 @@ type Size =
 let catbusSize = {width = 100.0; height = 50.0;}
 let bootSize = {width = 80.0; height = 100.0;}
 let catSize =  {width = 50.0; height = 100.0;}
-let cloudSize = {width = 50.0; height = 100.0;}
+let cloudSize = {width = 100.0; height = 50.0;}
 
 type Position = 
     {
@@ -85,6 +88,7 @@ type Player =
         mutable parachuteTime : int
         mutable buttonsPressed : Set<Button>
         mutable justJumped : bool
+        mutable score : int
     }
      with static member Create() =
             { state = PlayerState.InBus
@@ -96,6 +100,7 @@ type Player =
               parachuteTime = 0
               buttonsPressed = Set.empty  
               justJumped = false
+              score = 0
               }
            member this.busrect: SDLGeometry.Rectangle =
             let l,s = this.catbus 
@@ -122,7 +127,7 @@ let StartGame() =
         {
             Player1 = Player.Create()
             Player2 = Player.Create()
-            Cloud = Position.Zero() , cloudSize
+            Cloud = { Position.Zero() with y = (float <| chaos.Next(20, 200))}, cloudSize
             WindFactor = wind()
             State = Playing
         }
@@ -135,15 +140,17 @@ let StartGame() =
     (fst state.Player1.boot).y <- screenHeight - bootSize.height
     (fst state.Player2.boot).y <- screenHeight - bootSize.height
     
-
-
+    (fst state.Cloud).vx <- state.WindFactor
+    if state.WindFactor <= 0. then
+        (fst state.Cloud).x <- screenWidth - ((snd state.Cloud).width)
 
     state
 let update (state:Game) =
     // always move the cas buses no matter what
     (fst state.Player1.catbus).Update()
     (fst state.Player2.catbus).Update()
-
+    // always move the clouds with the wind
+    (fst state.Cloud).Update()
     let updatePlayer p =
         let isLeft = p.buttonsPressed.Contains Button.Left
         let isRight = p.buttonsPressed.Contains Button.Right
@@ -223,7 +230,19 @@ let update (state:Game) =
     match state.Player1.state, state.Player2.state with
     | (InBoot | Splatted), (InBoot | Splatted) -> 
         state.State <- GameOver
-        StartGame() 
+        let n = StartGame() 
+        let p1s =  ((state.Player1.parachuteTime / 2) + state.Player1.freeFallTime )         
+        let p2s =  ((state.Player2.parachuteTime / 2) + state.Player2.freeFallTime ) 
+        match state.Player1.state with 
+        | InBoot ->
+            n.Player1.score <- state.Player1.score + p1s
+        | _ -> n.Player1.score <- state.Player1.score
         
+        match state.Player2.state with 
+        | InBoot -> n.Player2.score <- n.Player2.score + p2s
+        
+        | _ -> n.Player1.score <- state.Player1.score
+        
+        n
     | _ -> state
     

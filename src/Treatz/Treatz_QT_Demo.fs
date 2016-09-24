@@ -128,20 +128,26 @@ let render(context:RenderingContext) (state:TreatzState) =
    
     let blt tex dest =
         context.Renderer |> copy tex None dest |> ignore
+
     let bltf src dest =
         context.Renderer |> copy state.textures.["font"] (Some src) (Some dest) |> ignore
     let drawString (s:string) (x,y) =
         let mutable i = 0
         for c in s do
-            bltf (state.Sprites.[byte c]) ({X = (x + (i*8)) * 1<px>; Y = y * 1<px>; Width = 8<px>; Height = 8<px>}) 
+            bltf (state.Sprites.[byte c]) ({X = (x + (i*16)) * 1<px>; Y = y * 1<px>; Width = 16<px>; Height = 16<px>}) 
             i <- i + 1
-   
+             
     let playerWin() player = ()
+
     let playing() =
+        let cloudRect: SDLGeometry.Rectangle =
+            let l,s = state.GameState.Cloud 
+            { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
+
         // always draw the catbuses and boots
         blt state.textures.["background"] None
         
-        blt state.textures.["cloud"] (Some <| state.GameState.Player1.bootrect)
+        blt state.textures.["cloud"] (Some <| cloudRect)
         
         blt state.textures.["catbus"] (Some <| state.GameState.Player1.busrect)
         blt state.textures.["catbus"] (Some <| state.GameState.Player2.busrect)
@@ -161,12 +167,13 @@ let render(context:RenderingContext) (state:TreatzState) =
         
         | _ -> () 
         
-    
+        
         blt state.textures.["boot"] (Some <| state.GameState.Player1.bootrect)
         blt state.textures.["boot"] (Some <| state.GameState.Player2.bootrect)
         
         //bltf (state.Sprites.[byte 'A']) ({X = 0<px>; Y = 0<px>; Width = 8<px>; Height = 8<px>})
-        drawString "HELLO WORLD" (10,10)
+        drawString (state.GameState.Player1.score.ToString()) (10,10)
+        drawString (state.GameState.Player2.score.ToString()) (700,10)
         ()
 
     // clear screen

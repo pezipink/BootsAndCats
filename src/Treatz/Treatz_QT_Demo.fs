@@ -1,4 +1,5 @@
-module Treatz_QT
+module BootsAndCats
+
 open System
 open SDLUtility
 open SDLGeometry
@@ -6,6 +7,7 @@ open SDLPixel
 open SDLRender
 open SDLKeyboard
 open Logic
+
 let fps = 60.0;
 let delay_time = 1000.0 / fps;
 let delay_timei = uint32 delay_time
@@ -18,10 +20,6 @@ let cellHeight = 5
 
 let mapWidth = 160
 let mapHeight = 120
-
-//type buonds = { x : int; y : int; width : int; height : int }
-
-
 
 type ControllerButton =
    | BUTTON_A = 0
@@ -39,33 +37,26 @@ type ControllerButton =
    | BUTTON_DPAD_DOWN = 12
    | BUTTON_DPAD_LEFT = 13
    | BUTTON_DPAD_RIGHT = 14
-
-//type GameState =
-//    TitleScreen 
-//    | P1Win
-//    | P2Win
-//    | Playing
-//    | Nope // both Splat (show splat?)
-    
+   
 type TreatzState =
     { PressedKeys : Set<ScanCode> 
       Chaos : System.Random 
       mutable GameState : Game
-      textures : Map<string, SDLTexture.Texture> 
+      Textures : Map<string, SDLTexture.Texture> 
       Controllers : Set<ControllerButton> * Set<ControllerButton>
       Sprites:     Map<byte,Rectangle>;
-       }
+    }
 
 let treeDepth = 15
 type RenderingContext =
     {Renderer:SDLRender.Renderer;
      Texture:SDLTexture.Texture;
      Surface:SDLSurface.Surface;
-     mutable lastFrameTick : uint32 }
+     mutable LastFrameTick : uint32 }
 
 let update (state:TreatzState) : TreatzState =
-    let pressed (code:ScanCode) = if state.PressedKeys.Contains code then true else false
-    let update (scancode, f) state = if pressed scancode then f state else state
+//    let pressed (code:ScanCode) = state.PressedKeys.Contains code 
+//    let update (scancode, f) state = if pressed scancode then f state else state
 
     
     let mapping = [(ControllerButton.BUTTON_A, Fire);(ControllerButton.BUTTON_DPAD_LEFT, Left);(ControllerButton.BUTTON_DPAD_RIGHT, Right)]
@@ -130,46 +121,44 @@ let render(context:RenderingContext) (state:TreatzState) =
         context.Renderer |> copy tex None dest |> ignore
 
     let bltf src dest =
-        context.Renderer |> copy state.textures.["font"] (Some src) (Some dest) |> ignore
+        context.Renderer |> copy state.Textures.["font"] (Some src) (Some dest) |> ignore
     let drawString (s:string) (x,y) =
         let mutable i = 0
         for c in s do
             bltf (state.Sprites.[byte c]) ({X = (x + (i*16)) * 1<px>; Y = y * 1<px>; Width = 16<px>; Height = 16<px>}) 
             i <- i + 1
-             
-    let playerWin() player = ()
-
+    
     let playing() =
         let cloudRect (cloud : Position * Size) : SDLGeometry.Rectangle =
             let l,s = cloud 
             { X = (int l.x) * 1<px>; Y = (int l.y) * 1<px>; Width = (int s.width) * 1<px>; Height = (int s.height) * 1<px>}
 
         // always draw the catbuses and boots
-        blt state.textures.["background"] None
+        blt state.Textures.["background"] None
         
-        state.GameState.Cloud |> List.iter(fun cp ->  blt state.textures.["cloud"] (Some <| cloudRect cp))
+        state.GameState.Cloud |> List.iter(fun cp ->  blt state.Textures.["cloud"] (Some <| cloudRect cp))
         
-        blt state.textures.["catbus"] (Some <| state.GameState.Player1.busrect)
-        blt state.textures.["catbus"] (Some <| state.GameState.Player2.busrect)
+        blt state.Textures.["catbus"] (Some <| state.GameState.Player1.busrect)
+        blt state.Textures.["catbus"] (Some <| state.GameState.Player2.busrect)
         
         match state.GameState.Player1.state with
         | FreeFalling -> 
-            blt state.textures.["cat-falling"] (Some <| state.GameState.Player1.prect)
+            blt state.Textures.["cat-falling"] (Some <| state.GameState.Player1.prect)
         | Parachute -> 
-            blt state.textures.["cat-parachute"] (Some <| state.GameState.Player1.prect)
+            blt state.Textures.["cat-parachute"] (Some <| state.GameState.Player1.prect)
         | _ -> () 
         
         match state.GameState.Player2.state with
         | FreeFalling -> 
-            blt state.textures.["cat-falling"] (Some <| state.GameState.Player2.prect)
+            blt state.Textures.["cat-falling"] (Some <| state.GameState.Player2.prect)
         | Parachute -> 
-            blt state.textures.["cat-parachute"] (Some <| state.GameState.Player2.prect)
+            blt state.Textures.["cat-parachute"] (Some <| state.GameState.Player2.prect)
         
         | _ -> () 
         
         
-        blt state.textures.["boot"] (Some <| state.GameState.Player1.bootrect)
-        blt state.textures.["boot"] (Some <| state.GameState.Player2.bootrect)
+        blt state.Textures.["boot"] (Some <| state.GameState.Player1.bootrect)
+        blt state.Textures.["boot"] (Some <| state.GameState.Player2.bootrect)
         
         //bltf (state.Sprites.[byte 'A']) ({X = 0<px>; Y = 0<px>; Width = 8<px>; Height = 8<px>})
         drawString (state.GameState.Player1.score.ToString()) (10,10)
@@ -202,9 +191,9 @@ let render(context:RenderingContext) (state:TreatzState) =
     context.Renderer |> SDLRender.present 
     
     // delay to lock at 60fps (we could do extra work here)
-    let frameTime = getTicks() - context.lastFrameTick
+    let frameTime = getTicks() - context.LastFrameTick
     if frameTime < delay_timei then delay(delay_timei - frameTime)
-    context.lastFrameTick <- getTicks()    
+    context.LastFrameTick <- getTicks()    
 
 
 let main() = 
@@ -219,7 +208,7 @@ let main() =
     SDLGameController.gameControllerOpen 0
     SDLGameController.gameControllerOpen 1
     
-    let context =  { Renderer = mainRenderer; Texture = mainTexture; Surface = surface; lastFrameTick = getTicks() }
+    let context =  { Renderer = mainRenderer; Texture = mainTexture; Surface = surface; LastFrameTick = getTicks() }
     
     // create default state
     let setKey bitmap colour =    
@@ -234,7 +223,6 @@ let main() =
             setKey bmp magenta
             SDLTexture.fromSurface mainRenderer bmp.Pointer
         
-        //use tittleScreenBitmap = SDLSurface.loadBmp SDLPixel.RGB888Format @"..\..\..\..\images\title.bmp"
         let tex = 
             [
                 ("titlescreen",loadTex @"..\..\..\..\images\title.bmp" )
@@ -256,19 +244,15 @@ let main() =
         
         let sprites = 
             [0uy..255uy]
-            |> Seq.map(fun index-> (index, ( {X=8<px>*((index |> int) % 16); Y=8<px>*((index |> int) / 16);Width=8<px>;Height=8<px>})))
+            |> Seq.map(fun index -> (index, ( {X=8<px>*((index |> int) % 16); Y=8<px>*((index |> int) / 16);Width=8<px>;Height=8<px>})))
             |> Map.ofSeq
     
-        //let sprite = context.Sprites.[cell.Character]
-//         sprite
-//        |>* blitSprite {X=0<px>;Y=0<px>} context.WorkSurface
-
 
         {Chaos = System.Random()
          PressedKeys = Set.empty
          Sprites = sprites
          GameState = StartGame()
-         textures = tex
+         Textures = tex
          Controllers = Set.empty, Set.empty
          }
 

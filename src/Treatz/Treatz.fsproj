@@ -53,7 +53,6 @@
     <None Include="paket.template" />
     <Compile Include="Logic.fs" />
     <Compile Include="Treatz_QT_Demo.fs" />
-    <None Include="WooPlayground.fsx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\SDLFS\SDLFS.fsproj">

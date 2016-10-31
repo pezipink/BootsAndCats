@@ -8,7 +8,7 @@
     <ProjectGuid>ab1649d1-c12a-40d1-aac3-262d3d2fe117</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Treatz</RootNamespace>
-    <AssemblyName>Treatz</AssemblyName>
+    <AssemblyName>BootsAndCats</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
     <Name>Treatz</Name>
@@ -51,6 +51,7 @@
     </None>
     <None Include="paket.references" />
     <None Include="paket.template" />
+    <Compile Include="LSystem.fs" />
     <Compile Include="Logic.fs" />
     <Compile Include="Treatz_QT_Demo.fs" />
   </ItemGroup>

@@ -7,6 +7,7 @@ open SDLPixel
 open SDLRender
 open SDLKeyboard
 open Logic
+open LSystem
 
 let fps = 60.0;
 let delay_time = 1000.0 / fps;
@@ -55,10 +56,6 @@ type RenderingContext =
      mutable LastFrameTick : uint32 }
 
 let update (state:TreatzState) : TreatzState =
-//    let pressed (code:ScanCode) = state.PressedKeys.Contains code 
-//    let update (scancode, f) state = if pressed scancode then f state else state
-
-    
     let mapping = [(ControllerButton.BUTTON_A, Fire);(ControllerButton.BUTTON_DPAD_LEFT, Left);(ControllerButton.BUTTON_DPAD_RIGHT, Right)]
 
     let getController buttons = 
@@ -112,11 +109,19 @@ let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option 
     | _ -> Some state
         // core logic function here
         
-    
-
-
 let render(context:RenderingContext) (state:TreatzState) =
-   
+    let drawTrees(trees:LineSegment list) =
+        let toSDLPoint(p:Position) = { X = int p.x * 1<SDLUtility.px>; Y = int p.y *1<SDLUtility.px> } : SDLGeometry.Point
+    
+        for ls in trees do
+          context.Renderer
+          |> SDLRender.setDrawColor(ls.color.r,ls.color.g,ls.color.b,0uy)
+          |> ignore
+                                    
+          context.Renderer
+          |> SDLRender.drawLines([|toSDLPoint ls.startPoint;toSDLPoint ls.endPoint|])  
+          |> ignore
+
     let blt tex dest =
         context.Renderer |> copy tex None dest |> ignore
 
@@ -136,8 +141,9 @@ let render(context:RenderingContext) (state:TreatzState) =
         // always draw the catbuses and boots
         blt state.Textures.["background"] None
         
-        state.GameState.Cloud |> List.iter(fun cp ->  blt state.Textures.["cloud"] (Some <| cloudRect cp))
-        
+        state.GameState.Clouds |> List.iter(fun cp ->  blt state.Textures.["cloud"] (Some <| cloudRect cp))
+        state.GameState.Trees |> drawTrees
+
         blt state.Textures.["catbus"] (Some <| state.GameState.Player1.busrect)
         blt state.Textures.["catbus"] (Some <| state.GameState.Player2.busrect)
         
@@ -181,9 +187,6 @@ let render(context:RenderingContext) (state:TreatzState) =
     context.Renderer |> SDLRender.copy context.Texture None None |> ignore
 
     match state.GameState.State with
-//    | TitleScreen -> titleScreen ()
-//    | P1Win -> playerWin() Player1
-//    | P2Win -> playerWin() Player2
     | Playing -> playing() 
     | GameOver -> () 
 
@@ -198,8 +201,8 @@ let render(context:RenderingContext) (state:TreatzState) =
 
 let main() = 
     use system = new SDL.System(SDL.Init.Video ||| SDL.Init.Events ||| SDL.Init.GameController)
-    //use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.Resizable) // FULLSCREEN!
-    use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.FullScreen) // FULLSCREEN!    
+    use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.Resizable) // FULLSCREEN!
+    //use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.FullScreen) // FULLSCREEN!    
     use mainRenderer = SDLRender.create mainWindow -1 SDLRender.Flags.Accelerated
     use surface = SDLSurface.createRGB (screenWidth,screenHeight,32<bit/px>) (0x00FF0000u,0x0000FF00u,0x000000FFu,0x00000000u)    
     use mainTexture = mainRenderer |> SDLTexture.create SDLPixel.RGB888Format SDLTexture.Access.Streaming (screenWidth,screenHeight)

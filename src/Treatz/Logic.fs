@@ -1,6 +1,7 @@
 ﻿module Logic
 open SDLUtility
 open System
+open LSystem
 /////
 let noMoreParachuting = 450.0
 let miaow =  
@@ -33,6 +34,7 @@ let parachuteFallSpeed = 2.5
 let veerFreefall = 5.0
 let veerParachute = 8.0
 
+
 // assume wind is between -5.0 to 5.0
 
 type Button =
@@ -52,19 +54,7 @@ let bootSize = {width = 80.0; height = 100.0;}
 let catSize =  {width = 50.0; height = 100.0;}
 let cloudSize = {width = 100.0; height = 50.0;}
 
-type Position = 
-    {
-        mutable x : float
-        mutable y : float
-        mutable vx : float
-        mutable vy : float
-    } 
-    with 
-    static member Zero() =
-        { x = 0.; y = 0.; vx=0.; vy = 0. }
-    member this.Update() = 
-            this.x <- this.x + this.vx
-            this.y <- this.y + this.vy
+
 
 type GameState =
     | Playing
@@ -117,28 +107,31 @@ type Game =
     {
         Player1 : Player
         Player2 : Player
-        mutable Cloud : (Position * Size) list
+        mutable Clouds : (Position * Size) list
+        mutable Trees: LineSegment list
         mutable WindFactor : float 
         mutable State : GameState
     }
 let createClouds() =
-  [
-   ({ Position.Zero() with x = (float <| chaos.Next(0, 200)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
-   ({ Position.Zero() with x = (float <| chaos.Next(200, (int screenHeight))) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
-   ({ Position.Zero() with x = (float <| chaos.Next(45, 250)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
-   ({ Position.Zero() with x = (float <| chaos.Next(100, 400)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)
-   ({ Position.Zero() with x = (float <| chaos.Next(300, 500)); y = (float <| chaos.Next(20, 200))}, cloudSize)
-   ]
+  [for _ in 1..(chaos.Next(6, 10)) do
+    yield ({ Position.Zero() with x = (float <| chaos.Next(0, 200)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)]
+let createTrees() = []
+//    ferns
+//      |> processLsystem 5
+//      |> processTurtle turtle
+
 
 let StartGame() =
     let state = 
         {
             Player1 = Player.Create()
             Player2 = Player.Create()
-            Cloud = createClouds()
+            Clouds = createClouds()
+            Trees = createTrees()
             WindFactor = wind()
             State = Playing
         }
+
     (fst state.Player2.catbus).x <- screenWidth - ((snd state.Player2.catbus).width)
     (fst state.Player1.catbus).vx <- busSpeed
     (fst state.Player2.catbus).vx <- -busSpeed
@@ -147,19 +140,20 @@ let StartGame() =
     (fst state.Player2.boot).x <- (screenWidth / 4.0) * 3.0
     (fst state.Player1.boot).y <- screenHeight - bootSize.height
     (fst state.Player2.boot).y <- screenHeight - bootSize.height
-    let cloudy cloud =
-        (fst cloud).vx <- state.WindFactor * cloudSpeed
-//        if state.WindFactor <= 0. then
-//            (fst cloud).x <- screenWidth - ((snd cloud).width)
-    state.Cloud |>  List.iter(cloudy)
 
+    let cloudy cloud =
+        (fst cloud).vx <- state.WindFactor * cloudSpeed 
+    let shakeTrees tree =
+      ()
+    state.Clouds |>  List.iter(cloudy)
+    state.Trees |> List.iter (shakeTrees)
     state
 let update (state:Game) =
     // always move the cas buses no matter what
     (fst state.Player1.catbus).Update()
     (fst state.Player2.catbus).Update()
     // always move the clouds with the wind
-    state.Cloud |> List.iter(fun x -> (fst x).Update() )
+    state.Clouds |> List.iter(fun x -> (fst x).Update() )
     let updatePlayer p =
         let isLeft = p.buttonsPressed.Contains Button.Left
         let isRight = p.buttonsPressed.Contains Button.Right

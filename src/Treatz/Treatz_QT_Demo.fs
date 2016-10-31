@@ -1,6 +1,5 @@
 module BootsAndCats
 
-open System
 open SDLUtility
 open SDLGeometry
 open SDLPixel
@@ -49,6 +48,7 @@ type TreatzState =
     }
 
 let treeDepth = 15
+
 type RenderingContext =
     {Renderer:SDLRender.Renderer;
      Texture:SDLTexture.Texture;
@@ -110,18 +110,17 @@ let handleEvent (event:SDLEvent.Event) (state:TreatzState) : TreatzState option 
         // core logic function here
         
 let render(context:RenderingContext) (state:TreatzState) =
-    let drawTrees(trees:LineSegment list) =
-        let toSDLPoint(p:Position) = { X = int p.x * 1<SDLUtility.px>; Y = int p.y *1<SDLUtility.px> } : SDLGeometry.Point
     
-        for ls in trees do
+    let drawLines(lines:LineSegment list) =
+        for ls in lines do
           context.Renderer
           |> SDLRender.setDrawColor(ls.color.r,ls.color.g,ls.color.b,0uy)
           |> ignore
                                     
           context.Renderer
-          |> SDLRender.drawLines([|toSDLPoint ls.startPoint;toSDLPoint ls.endPoint|])  
+          |> SDLRender.drawLine (int ls.startPoint.x) (int ls.startPoint.y) (int ls.endPoint.x) (int ls.endPoint.y)
           |> ignore
-
+          
     let blt tex dest =
         context.Renderer |> copy tex None dest |> ignore
 
@@ -140,9 +139,9 @@ let render(context:RenderingContext) (state:TreatzState) =
 
         // always draw the catbuses and boots
         blt state.Textures.["background"] None
-        
+
         state.GameState.Clouds |> List.iter(fun cp ->  blt state.Textures.["cloud"] (Some <| cloudRect cp))
-        state.GameState.Trees |> drawTrees
+        state.GameState.Trees |> drawLines
 
         blt state.Textures.["catbus"] (Some <| state.GameState.Player1.busrect)
         blt state.Textures.["catbus"] (Some <| state.GameState.Player2.busrect)
@@ -166,19 +165,18 @@ let render(context:RenderingContext) (state:TreatzState) =
         blt state.Textures.["boot"] (Some <| state.GameState.Player1.bootrect)
         blt state.Textures.["boot"] (Some <| state.GameState.Player2.bootrect)
         
-        //bltf (state.Sprites.[byte 'A']) ({X = 0<px>; Y = 0<px>; Width = 8<px>; Height = 8<px>})
+        bltf (state.Sprites.[byte 'A']) ({X = 0<px>; Y = 0<px>; Width = 8<px>; Height = 8<px>})
         drawString (state.GameState.Player1.score.ToString()) (10,10)
         drawString (state.GameState.Player2.score.ToString()) (700,10)
         ()
 
     // clear screen
-    context.Renderer |> SDLRender.setDrawColor (0uy,0uy,50uy,0uy) |> ignore
+    context.Renderer |> SDLRender.setDrawColor (0uy,0uy,150uy,0uy) |> ignore
     context.Renderer |> SDLRender.clear |> ignore
 
     context.Surface
     |> SDLSurface.fillRect None {Red=0uy;Green=0uy;Blue=0uy;Alpha=255uy}
     |> ignore
-    
     
     
     context.Texture
@@ -190,7 +188,6 @@ let render(context:RenderingContext) (state:TreatzState) =
     | Playing -> playing() 
     | GameOver -> () 
 
-
     context.Renderer |> SDLRender.present 
     
     // delay to lock at 60fps (we could do extra work here)
@@ -201,7 +198,7 @@ let render(context:RenderingContext) (state:TreatzState) =
 
 let main() = 
     use system = new SDL.System(SDL.Init.Video ||| SDL.Init.Events ||| SDL.Init.GameController)
-    use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.Resizable) // FULLSCREEN!
+    use mainWindow = SDLWindow.create "BootsAndCats" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.Resizable) // FULLSCREEN!
     //use mainWindow = SDLWindow.create "test" 100<px> 100<px> screenWidth screenHeight (uint32 SDLWindow.Flags.FullScreen) // FULLSCREEN!    
     use mainRenderer = SDLRender.create mainWindow -1 SDLRender.Flags.Accelerated
     use surface = SDLSurface.createRGB (screenWidth,screenHeight,32<bit/px>) (0x00FF0000u,0x0000FF00u,0x000000FFu,0x00000000u)    

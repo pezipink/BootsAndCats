@@ -105,6 +105,7 @@ module private SDLRenderNative =
     extern int SDL_GL_BindTexture(IntPtr texture, IntPtr texw, IntPtr texh)
     [<DllImport(@"SDL2.dll", CallingConvention = CallingConvention.Cdecl)>]
     extern int SDL_GL_UnbindTexture(IntPtr texture)
+    
 
 let create (window:SDLWindow.Window) (index:int) (flags:Flags) :Renderer =
     let ptr = SDLRenderNative.SDL_CreateRenderer(window.Pointer, index, flags |> uint32)
@@ -131,6 +132,8 @@ let copyEx (texture:SDLTexture.Texture) (srcrect:Rectangle option) (dstrect:Rect
 let drawRect (srcrect:Rectangle) (renderer:Renderer) =
     SDLGeometry.withSDLRectPointer(fun src ->SDLRenderNative.SDL_RenderDrawRect(renderer.Pointer,src)) (Some srcrect)
 
+let drawLine x y z w (renderer:Renderer) =
+  SDLRenderNative.SDL_RenderDrawLine(renderer.Pointer, x,y,z,w) 
 let drawLines (points:SDLGeometry.Point []) (renderer:Renderer) =
     let native = System.Runtime.InteropServices.Marshal.UnsafeAddrOfPinnedArrayElement(points,0)
     let sss = new IntPtr(native.ToPointer())

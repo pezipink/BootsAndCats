@@ -55,7 +55,7 @@ let processTurtle turtle program =
             let rads = turtle.angle * (System.Math.PI / 180.0)
             let x = turtle.x + d * cos rads
             let y = turtle.y + d * sin rads
-            let newTurtle = {turtle with x = x; y= y }
+            let newTurtle = {turtle with x = x; y= y; c = randomColor()  }
             let seg = 
                 {   startPoint = {x =  turtle.x; y =  turtle.y; vx=0.; vy=0.}
                     endPoint = {x =  x; y =  y; vx=0.; vy=0.}
@@ -66,7 +66,7 @@ let processTurtle turtle program =
             let rads = turtle.angle * (System.Math.PI / 180.0)
             let x = turtle.x + d * cos rads
             let y = turtle.y + d * sin rads
-            let newTurtle = {turtle with x = x; y= y }
+            let newTurtle = {turtle with x = x; y= y}
             aux output newTurtle t
 
         | Turn delta :: t -> 
@@ -126,8 +126,7 @@ HINT! You are probably going to need to add some new LogoCommands ...
 
 *) 
 
-
-let ferns = {
+let ferns (direction)= {
     Axiom = "X"
     Productions = 
         function
@@ -139,21 +138,9 @@ let ferns = {
             let lenght = 3.
             match c with
             | 'F' -> Some <| [DrawForward(lenght)]
-            | '-' -> Some <| [Turn(15.)]
-            | '+' -> Some <| [Turn(-15.)]
+            | '-' -> Some <| [Turn(direction)]
+            | '+' -> Some <| [Turn(direction)]
             | '[' -> Some <| [Push]
             | ']' -> Some <| [Pop]
             |  _  -> None
 }
-
-
-// a default turtle location
-let turtle = { x = 0.0; y = 0.0; angle = 0.0; c = red }
-
-// since some generalization has happened, creating the logo commands 
-// explicty has been removed. here is an example on how to use the above 
-// functions in SDL. (note that some LSystems take extra paramters, for example, for width)
-//dragon 
-//|> processLsystem 3 
-//|> processTurtle turtle
-//|> replace

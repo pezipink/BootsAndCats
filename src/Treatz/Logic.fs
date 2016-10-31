@@ -11,11 +11,16 @@ let miaow =
 let chaos = System.Random(DateTime.Now.Millisecond)
 
 let screenWidth = 800.0;
-
+let halfWidth =  screenWidth / 2. |> int
 let screenHeight = 600.0;
+let halfHeight = screenHeight/ 2.|> int
 
-let groundLevel = 600.0;
+let groundLevel = 580.0;
 // default ground level where the boots are
+
+
+// a default turtle location
+let turtle = { x = float halfWidth; y =500. ; angle = -90.0; c = green}
 
 let busSpeed = 2.5
 let cloudSpeed = 0.8
@@ -115,20 +120,29 @@ type Game =
 let createClouds() =
   [for _ in 1..(chaos.Next(6, 10)) do
     yield ({ Position.Zero() with x = (float <| chaos.Next(0, 200)) ; y = (float <| chaos.Next(20, 200))}, cloudSize)]
-let createTrees() = []
-//    ferns
-//      |> processLsystem 5
-//      |> processTurtle turtle
+
+let createTrees (direction : float)= 
+   let d = direction / System.Math.Abs(direction)
+   let randomW delta = chaos.Next((-1 * delta), delta) |> float
+   [for _ in 1..(chaos.Next(6, 10)) do
+    yield ferns(16.0 * d)
+          |> processLsystem 3
+          |> processTurtle {turtle with 
+                              x = turtle.x + randomW(halfWidth); 
+                              y = turtle.y + randomW(halfHeight / 4)}]
+   |> List.concat
+  
 
 
 let StartGame() =
     let state = 
+        let windFactor = wind()
         {
             Player1 = Player.Create()
             Player2 = Player.Create()
             Clouds = createClouds()
-            Trees = createTrees()
-            WindFactor = wind()
+            WindFactor = windFactor
+            Trees = createTrees(windFactor)
             State = Playing
         }
 
